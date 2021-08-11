@@ -22,6 +22,7 @@ wsServer.on("request", request => {
     connection.on("message", message => {
         const result = JSON.parse(message.utf8Data)
         // I have received a message from the client
+
         // A client want to create a new game
         if (result.method == "create"){
             const clientId = result.clientId
@@ -30,7 +31,8 @@ wsServer.on("request", request => {
                 "id": gameId,
                 "balls": 20,
                 "clients": [],
-                "elapsedTime": 0
+                "elapsedTime": 0,
+                "gameTime": result.gameTime
             }
 
             const payLoad = {
@@ -39,6 +41,7 @@ wsServer.on("request", request => {
             }
             const con = clients[clientId].connection;
             con.send(JSON.stringify(payLoad));
+            updateGameList();
 
         }
 
@@ -98,32 +101,47 @@ wsServer.on("request", request => {
         "clientId": clientId
     }
     //send back the client connect
-    connection.send(JSON.stringify(payLoad))
-
+    connection.send(JSON.stringify(payLoad));
+    updateGameList()
 })
+
+function updateGameList(){
+
+    const payLoad = {
+        "method": "updateGameList",
+        "games": games
+    }
+    for (let c in clients) {
+        
+        clients[c].connection.send(JSON.stringify(payLoad))
+    }
+
+    console.log(clients);
+    //setTimeout(updateGameList, 500);
+}
+
 
 function updateGameState(){
     if (!timeBegin) timeBegin = Date.now();
-    elapsedTime = Date.now() - timeBegin
-    console.log(timeBegin)
-    console.log(elapsedTime)
+    elapsedTime = Math.ceil((Date.now() - timeBegin) / 1000)
 
     for (const g of Object.keys(games)) {
             const game = games[g]
+        console.log(elapsedTime + " < " + game.gameTime)
 
-        if (elapsedTime < 5000){
+        if (elapsedTime < game.gameTime){
             game.elapsedTime = elapsedTime;
             const payLoad = {
-                "method": "update",
+                "method": "playing",
                 "game": game
             }
             game.clients.forEach(c => {
                 clients[c.clientId].connection.send(JSON.stringify(payLoad))
             })
         
-            console.log("Atualizando...");
             setTimeout(updateGameState, 500);
         } else {
+            game.elapsedTime = elapsedTime;
             for (let s in game.state) {
                 game.clients.forEach(c => {
                     if (c.color === game.state[s]) c.points = c.points + 1;
@@ -139,7 +157,7 @@ function updateGameState(){
             })
             
             const payLoad = {
-                "method": "update",
+                "method": "finish",
                 "game": game
             }
             game.clients.forEach(c => {
@@ -148,10 +166,6 @@ function updateGameState(){
 
             console.log("fim de jogo")
         }
-
-
-
-
     }
 }
 
