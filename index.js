@@ -85,9 +85,7 @@ wsServer.on("request", request => {
             if (!state)
                 state = {}
             state[ballId] = color;
-            games[gameId].state = state;
-            console.log(state)
-            
+            games[gameId].state = state;            
         }
     })
     //generate a new clientId
@@ -115,9 +113,6 @@ function updateGameList(){
         
         clients[c].connection.send(JSON.stringify(payLoad))
     }
-
-    console.log(clients);
-    //setTimeout(updateGameList, 500);
 }
 
 
@@ -126,8 +121,7 @@ function updateGameState(){
     elapsedTime = Math.ceil((Date.now() - timeBegin) / 1000)
 
     for (const g of Object.keys(games)) {
-            const game = games[g]
-        console.log(elapsedTime + " < " + game.gameTime)
+        const game = games[g]
 
         if (elapsedTime < game.gameTime){
             game.elapsedTime = elapsedTime;
